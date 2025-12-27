@@ -5,6 +5,8 @@
 #include <WiFiClientSecure.h>
 #include <U8g2lib.h>
 #include <Wire.h>
+#include <FS.h>
+#include <SPIFFS.h>
 
 #include "secrets.h"
 #include "stock.h"
@@ -18,6 +20,8 @@ String stockSymbols[] = {
   "GOOGL",
   "TSLA"
 };
+
+const char* csvFile = "/portfolio.csv";
 
 U8G2_SH1106_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE, 22, 21);
 #define X_OFFSET 0
@@ -40,7 +44,7 @@ void display(const char *name, float currentPrice, float oneDayPrice) {
   u8g2.drawStr(X_OFFSET, 30, name);
 //  String temp = "$" + floatToString(currentPrice);
   u8g2.drawStr(80, 30, floatToString(currentPrice));
-  float oneDayDifference = (oneDayPrice - currentPrice);
+  float oneDayDifference = (currentPrice - oneDayPrice);
   u8g2.drawStr(75, 55, floatToString(oneDayDifference));
   u8g2.drawStr(X_OFFSET, 55, "24H");
   u8g2.drawHLine(0, 37, 140);
@@ -113,6 +117,17 @@ bool fetchJSON(const String& url, JsonDocument& doc) {
   return true;
 }
 
+int getStockIndex(String name){
+  for(int i=0; i<numStocks, i++){
+    if(stocks[i].name == name){
+      return i;
+    }
+  }
+  return -1;
+}
+
+
+
 // -------------------- Stock Updates --------------------
 // Finnhub: current price + 24h prev close
 void updateStockCurrent(Stock &stock) {
@@ -143,6 +158,55 @@ void createStructs() {
   }
 }
 
+void loadCSV(const char* path) {
+  File file = SPIFFS.open(path, FILE_READ);
+  if (!file) {
+    Serial.println("Failed to open file");
+    return;
+  }
+
+  Serial.println("Reading CSV...");
+
+  while (file.available()) {
+    String line = file.readStringUntil('\n'); // read line
+    line.trim(); // remove newline/extra spaces
+    if (line.length() == 0) continue; // skip empty lines
+
+    // Skip header if it exists
+    if (line.startsWith("Ticker")) continue;
+
+    // Split line by comma
+    int firstComma = line.indexOf(',');
+    int secondComma = line.indexOf(',', firstComma + 1);
+
+    String ticker = line.substring(0, firstComma);
+    String buyPriceStr = line.substring(firstComma + 1, secondComma);
+    String quantityStr = line.substring(secondComma + 1);
+
+    // Convert strings to numbers
+    float buyPrice = buyPriceStr.toFloat();
+    int quantity = quantityStr.toInt();
+
+    // Print values
+    Serial.print("Ticker: "); Serial.print(ticker);
+    Serial.print(", BuyPrice: "); Serial.print(buyPrice);
+    Serial.print(", Quantity: "); Serial.println(quantity);
+
+    //add values to portfolio
+    if(quantity > 0){
+      int index = getStockIndex(ticker);
+      float sum = stocks[index].buyPrice * stocks[index].quantity;
+      sum += (buyPrice * quantity);
+      int newQuantity = quantity + stocks[index].quantity;
+      stocks[index].buyPrice = round((sum / newQuantity) * 100.0) / 100.0; //rounds to two decimal places
+      stocks[index].quantity = newQuantity;
+    }
+  }
+
+  file.close();
+  Serial.println("Done reading CSV.");
+}
+
 // -------------------- Background Task --------------------
 const unsigned long UPDATE_INTERVAL_CURRENT = 60000; // 1 min
 
@@ -161,6 +225,13 @@ void setup() {
   Serial.begin(115200);
   u8g2.begin(); 
   delay(100);
+
+  // Initialize SPIFFS
+  if (!SPIFFS.begin(true)) {
+    Serial.println("Failed to mount SPIFFS");
+  } else {
+    loadCSV(csvFile);
+  }
 
   connectToWiFi();
   createStructs();
