@@ -6,6 +6,6 @@
 #define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
 
 // Finnhub API key
-#define FINNHUB_API_KEY "YOUR_FINNHUB_API_KEY"
+#define FINNHUB_API_KEY "YOUR_API_KEY" //https://finnhub.io/
 
 #endif // SECRETS_H
