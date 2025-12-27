@@ -1,0 +1,11 @@
+#ifndef SECRETS_H
+#define SECRETS_H
+
+// WiFi credentials
+#define WIFI_SSID     "YOUR_WIFI_SSID"
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+
+// Finnhub API key
+#define FINNHUB_API_KEY "YOUR_FINNHUB_API_KEY"
+
+#endif // SECRETS_H
