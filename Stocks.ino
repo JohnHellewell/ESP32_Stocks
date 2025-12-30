@@ -19,7 +19,8 @@ String stockSymbols[] = {
   "AMZN",
   "MSFT",
   "GOOGL",
-  "TSLA"
+  "TSLA",
+  "RPRX"
 };
 
 enum TextAlign {
@@ -118,7 +119,7 @@ void stockDisplay(const char *name, float currentPrice, float oneDayPrice) {
   u8g2.drawStr(getAlignedX(priceStr.c_str(), ALIGN_RIGHT), 30, priceStr.c_str());
 
   float oneDayDifference = currentPrice - oneDayPrice;
-  String diffStr = "$" + String(floatToString(oneDayDifference));
+  String diffStr = String(addSymbols(oneDayDifference));
   u8g2.drawStr(getAlignedX(diffStr.c_str(), ALIGN_RIGHT), 55, diffStr.c_str());
 
   u8g2.drawStr(X_OFFSET, 55, "24H");
@@ -338,7 +339,7 @@ void setup() {
   // Initial updates
   for (int i = 0; i < numStocks; i++) {
     updateStockCurrent(stocks[i], true);
-    delay(500);
+    delay(250);
   }
 
   textCard("Creating backgrnd", "processes...");
@@ -357,21 +358,33 @@ void setup() {
 }
 
 void loop() {
-  timeCard();
-  delay(5000);
-  for(int i=0; i<numStocks; i++){
+  timeCard(); //Displays time in NYC
+  delay(5000); //5 sec
+  for(int i=0; i<numStocks; i++){ //displays general stock information
     stockDisplay(stocks[i].name.c_str(), stocks[i].currentValue, stocks[i].oneDay);
-    delay(5000);
+    delay(3000); //3 sec
     
   }
-  for(int i=0; i<ownerCount; i++){ //profit cards
+  for(int i=0; i<ownerCount; i++){ //profit cards for individual stocks
     for(int j=0; j<numStocks; j++){
       if(userOwnsStock(owners[i], stocks[j].name.c_str())){
         ProfitResult p = getUserStockProfit(owners[i], stocks[j].name.c_str(), stocks, numStocks);
         profitsCard(owners[i], stocks[j].name.c_str(), p.oneDay, p.allTime);
-        delay(10000); //10 sec
+        delay(6000); //6 sec
       }
     }
   }
-  
+  for(int i=0; i<ownerCount; i++){ //profits per user
+    float totalProfit = 0.0;
+    float total24Hr = 0.0;
+    for(int j=0; j<numStocks; j++){
+      if(userOwnsStock(owners[i], stocks[j].name.c_str())){
+        ProfitResult p = getUserStockProfit(owners[i], stocks[j].name.c_str(), stocks, numStocks);
+        totalProfit += p.allTime;
+        total24Hr += p.oneDay;
+      }
+    }
+    profitsCard(owners[i], "Total:", total24Hr, totalProfit);
+    delay(6000); // 6 sec
+  }
 }

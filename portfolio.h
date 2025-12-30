@@ -24,7 +24,9 @@ const Trade portfolio[] = {
 
   { "QQQM", 256.88, 1, "Hayden" },
   { "AMZN", 235.80, 1, "Kate" },
-  { "AAPL", 233.84, 1, "Kate" }
+  { "AAPL", 233.84, 1, "Kate" },
+ // { "SPY", 17.37, 6, "Nathan" },
+  { "RPRX", 39.72, 1, "Nathan"}
 
 };
 
