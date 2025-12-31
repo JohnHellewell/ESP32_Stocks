@@ -28,6 +28,19 @@ inline const char* getGreeting() {
   }
 }
 
+bool isAwake() { //returns if the screen should be awake (6AM to 10PM)
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    return true;
+  }
+
+  int hour = timeinfo.tm_hour;
+  hour +=21;
+  hour %= 24; //now its PST
+
+  return (hour >= 6) && (hour <= 22);
+}
+
 // ==================================================
 // Returns: "Market open" or "Market closed"
 // NYSE hours: Mon–Fri, 9:30–16:00 ET

@@ -23,6 +23,8 @@ String stockSymbols[] = {
   "RPRX"
 };
 
+const bool doSleepMode = true; //turns off at night time. 10pm to 6am PST. Set to false to keep on always
+
 enum TextAlign {
   ALIGN_LEFT,
   ALIGN_CENTER,
@@ -91,6 +93,13 @@ void textCard(const char *line1 = "",
 
   u8g2.sendBuffer();
 }
+
+void displayOff() { //turn off display
+  u8g2.clearBuffer();
+  u8g2.sendBuffer();
+  u8g2.setPowerSave(1);
+}
+
 
 
 void profitsCard(const char *owner, const char *name, float oneDay, float allTime) {
@@ -357,34 +366,50 @@ void setup() {
   );
 }
 
+bool asleep = false;
+
 void loop() {
-  timeCard(); //Displays time in NYC
-  delay(5000); //5 sec
-  for(int i=0; i<numStocks; i++){ //displays general stock information
-    stockDisplay(stocks[i].name.c_str(), stocks[i].currentValue, stocks[i].oneDay);
-    delay(3000); //3 sec
-    
-  }
-  for(int i=0; i<ownerCount; i++){ //profit cards for individual stocks
-    for(int j=0; j<numStocks; j++){
-      if(userOwnsStock(owners[i], stocks[j].name.c_str())){
-        ProfitResult p = getUserStockProfit(owners[i], stocks[j].name.c_str(), stocks, numStocks);
-        profitsCard(owners[i], stocks[j].name.c_str(), p.oneDay, p.allTime);
-        delay(6000); //6 sec
+  if(!doSleepMode || isAwake()){
+    asleep = false;
+    u8g2.setPowerSave(0); //undo displayOff
+    timeCard(); //Displays time in NYC
+    delay(5000); //5 sec
+    for(int i=0; i<numStocks; i++){ //displays general stock information
+      stockDisplay(stocks[i].name.c_str(), stocks[i].currentValue, stocks[i].oneDay);
+      delay(3000); //3 sec
+      
+    }
+    for(int i=0; i<ownerCount; i++){ //profit cards for individual stocks
+      for(int j=0; j<numStocks; j++){
+        if(userOwnsStock(owners[i], stocks[j].name.c_str())){
+          ProfitResult p = getUserStockProfit(owners[i], stocks[j].name.c_str(), stocks, numStocks);
+          profitsCard(owners[i], stocks[j].name.c_str(), p.oneDay, p.allTime);
+          delay(6000); //6 sec
+        }
       }
     }
-  }
-  for(int i=0; i<ownerCount; i++){ //profits per user
-    float totalProfit = 0.0;
-    float total24Hr = 0.0;
-    for(int j=0; j<numStocks; j++){
-      if(userOwnsStock(owners[i], stocks[j].name.c_str())){
-        ProfitResult p = getUserStockProfit(owners[i], stocks[j].name.c_str(), stocks, numStocks);
-        totalProfit += p.allTime;
-        total24Hr += p.oneDay;
+    for(int i=0; i<ownerCount; i++){ //profits per user
+      float totalProfit = 0.0;
+      float total24Hr = 0.0;
+      for(int j=0; j<numStocks; j++){
+        if(userOwnsStock(owners[i], stocks[j].name.c_str())){
+          ProfitResult p = getUserStockProfit(owners[i], stocks[j].name.c_str(), stocks, numStocks);
+          totalProfit += p.allTime;
+          total24Hr += p.oneDay;
+        }
       }
+      profitsCard(owners[i], "Total:", total24Hr, totalProfit);
+      delay(6000); // 6 sec
     }
-    profitsCard(owners[i], "Total:", total24Hr, totalProfit);
-    delay(6000); // 6 sec
+
+  } else {
+    if(asleep){
+      textCard("Sleeping...", "", "After hours. zzz");
+      delay(30000); //30 s
+      asleep = true;
+    }
+    displayOff();
+    delay(60000); //delay 1 min
   }
+  
 }
