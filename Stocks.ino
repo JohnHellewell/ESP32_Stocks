@@ -403,7 +403,7 @@ void loop() {
     }
 
   } else {
-    if(asleep){
+    if(!asleep){
       textCard("Sleeping...", "", "After hours. zzz");
       delay(30000); //30 s
       asleep = true;
